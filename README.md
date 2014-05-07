@@ -57,7 +57,9 @@ and will be downloaded automatically.
 
 This will fetch the Docker images from the Docker.io index and start
 the containers. Downloading the Docker images will take a while. Be
-patient.
+patient. Once the images are downloaded the deploy script will start
+the containers. Wait until the CPU load is below 40% again. Booting
+Cassandra in the container can take quite a while.
 
 If you want to trace code that runs on the host you will need to
 expose and forward the collector port as shown in deploy.sh.
