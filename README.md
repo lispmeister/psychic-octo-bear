@@ -7,13 +7,18 @@ and need to have Docker installed.
 
 ## OSX
 
-You can use these Docker images on OSX with boot2docker. Here's how:
+Information on running Docker on OSX can be found here:
+<http://docs.docker.io/installation/mac/>
+
+You first need to install VirtualBox.
+<https://www.virtualbox.org/wiki/Downloads>
+
+Once the download has completed run the installer.
+
+Next you need to install `boot2docker`:
 
     brew update
     brew install boot2docker
-
-More information on running Docker on OSX can be found here:
-<http://docs.docker.io/installation/mac/>
 
 Once boot2docker is installed:
 
