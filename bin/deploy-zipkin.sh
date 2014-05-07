@@ -3,6 +3,7 @@ IMG_PREFIX="lispmeister/zipkin-"
 NAME_PREFIX="zipkin-"
 WEB_PORT="8080"
 COLLECTOR_PORT="9410"
+COLLECTOR_MGT_PORT="9900"
 QUERY_PORT="9411"
 ROOT_URL="http://deb.local:$PUBLIC_PORT"
 
@@ -19,7 +20,7 @@ echo "** Starting zipkin-cassandra"
 docker run -d --name="${NAME_PREFIX}cassandra" "${IMG_PREFIX}cassandra"
 
 echo "** Starting zipkin-collector"
-docker run -d --link="${NAME_PREFIX}cassandra:db" -p 9410:$COLLECTOR_PORT --name="${NAME_PREFIX}collector" "${IMG_PREFIX}collector"
+docker run -d --link="${NAME_PREFIX}cassandra:db" -p 9410:$COLLECTOR_PORT -p 9900:$COLLECTOR_MGT_PORT --name="${NAME_PREFIX}collector" "${IMG_PREFIX}collector"
 
 echo "** Starting zipkin-query"
 docker run -d --link="${NAME_PREFIX}cassandra:db" -p 9411:$QUERY_PORT --name="${NAME_PREFIX}query" "${IMG_PREFIX}query"

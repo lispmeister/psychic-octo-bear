@@ -155,7 +155,7 @@ class WebActor extends Actor with ActorTracing {
 
 
  
-object PingPong extends App {
+object PsychicOctoBear extends App {
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val askTimeout: Timeout = 1000.milliseconds
 
