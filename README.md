@@ -1,5 +1,9 @@
 # README
 
+This demo project shows how to use Twitter's
+[Zipkin](http://twitter.github.io/zipkin/index.html)
+to trace calls in a (potentially) distributed service environment.
+
 ## Linux
 
 If you're developing on Linux, you will need a Docker enabled kernel
