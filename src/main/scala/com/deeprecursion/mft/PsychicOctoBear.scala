@@ -11,7 +11,7 @@ import net.liftweb.json._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Random
+import scala.util.{Try, Random}
 
 
 case class Put(id: String) extends TracingSupport {
@@ -38,8 +38,8 @@ class ServiceActor extends Actor with ActorTracing {
     case msg @ Put(id) =>
       trace.sample(msg, "psychic-octo-bear")
 
-      val dstName = "S3"
-      val dst = context.actorSelection("../" + dstName + "*")
+      val dstName = "s3"
+      val dst = context.actorSelection("../" + dstName)
       val label = msg.name + " " + id
       trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
@@ -116,8 +116,8 @@ class WebActor extends Actor with ActorTracing {
     case msg @ Put(id) =>
       trace.sample(msg, "psychic-octo-bear")
 
-      val dstName = "Service"
-      val dst = context.actorSelection("../" + dstName + "*")
+      val dstName = "service"
+      val dst = context.actorSelection("../" + dstName)
       val label = msg.name + " " + id
       trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
@@ -151,25 +151,30 @@ object PsychicOctoBear extends App {
   val config = ConfigFactory.load("psychic-octo-bear.conf")
   val system = ActorSystem("PsychicOctoBear", config)
 
-  val web = system.actorOf(Props[WebActor], name="Web")
+  val web = system.actorOf(Props[WebActor], name="web")
   val service = system.actorOf(Props[ServiceActor], name="service")
-  val s3 = system.actorOf(Props[S3Actor], name="S3")
+  val s3 = system.actorOf(Props[S3Actor], name="s3")
 
   // wait for actors to start
   Thread.sleep(2000)
 
-  // send messages
-  for (_ <- 1 to 10) {
-    val uuid = UUID.randomUUID().toString
-    println("Call Web: " + uuid)
-    val future = web ? Put(uuid)
-    val result = Await.result(future, askTimeout.duration).asInstanceOf[Ack]
-    println("Ack with code: " + result.responseCode + " and id: " + result.id)
-    println()
-    Thread.sleep(1000)
+  Try {
+
+    // send messages
+    for (_ <- 1 to 10) {
+      val uuid = UUID.randomUUID().toString
+      println("Call Web: " + uuid)
+      val future = web ? Put(uuid)
+      val result = Await.result(future, askTimeout.duration).asInstanceOf[Ack]
+      println("Ack with code: " + result.responseCode + " and id: " + result.id)
+      println()
+      Thread.sleep(1000)
+    }
+
+    system.awaitTermination(1.second)
+
   }
 
-  system.awaitTermination(30.seconds)
   system.shutdown()
 }
 
