@@ -16,7 +16,6 @@ resolvers ++= Seq(
 
 resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 
-
 libraryDependencies ++= Seq(
   "com.typesafe.akka"     %% "akka-actor"         % "2.3.11",
   "com.typesafe.akka"     %% "akka-kernel"        % "2.3.11",
@@ -33,3 +32,5 @@ libraryDependencies ++= Seq(
   "net.liftmodules"       %% "lift-jquery-module_2.6" % "2.5",
   "com.github.levkhomich" %% "akka-tracing-core"  % "0.4",
   "com.github.nscala-time" %% "nscala-time"       % "2.0.0")
+
+fork in run := true

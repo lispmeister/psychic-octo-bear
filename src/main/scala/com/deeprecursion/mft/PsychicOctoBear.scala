@@ -38,14 +38,14 @@ class ServiceActor extends Actor with ActorTracing {
     case msg @ Put(id) =>
       trace.sample(msg, "psychic-octo-bear")
 
-      val dstName = "s3"
-      val dst = context.actorSelection("../" + dstName)
+      val s3Path = "akka.tcp://backend@127.0.0.1:2554/user/s3"
+      val dst = context.actorSelection(s3Path)
       val label = msg.name + " " + id
       trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
 
       println("\t\t" + self.path.name + " received Put: " + id)
-      println("\t\t" + self.path.name + " calls " + dstName + ": " + id)
+      println("\t\t" + self.path.name + " calls " + s3Path + ": " + id)
       // use asChildOf to continue the span
       import context.dispatcher
       dst ? Put(id).asChildOf(msg) recover {
@@ -116,14 +116,14 @@ class WebActor extends Actor with ActorTracing {
     case msg @ Put(id) =>
       trace.sample(msg, "psychic-octo-bear")
 
-      val dstName = "service"
-      val dst = context.actorSelection("../" + dstName)
+      val servicePath = "akka.tcp://frontend@127.0.0.1:2553/user/service"
+      val dst = context.actorSelection(servicePath)
       val label = msg.name + " " + id
       trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
 
       println("\t" + self.path.name + " received Put: " + id)
-      println("\t" + self.path.name + " calls " + dstName + ": " + id)
+      println("\t" + self.path.name + " calls " + servicePath + ": " + id)
       import context.dispatcher
       dst ? Put(id).asChildOf(msg) recover {
         case e: Exception =>
@@ -146,16 +146,23 @@ class WebActor extends Actor with ActorTracing {
 }
 
 object PsychicOctoBear extends App {
-  implicit val askTimeout: Timeout = 1000.milliseconds
+  implicit val askTimeout: Timeout = 1.second
 
   val config = ConfigFactory.load("psychic-octo-bear.conf")
-  val system = ActorSystem("PsychicOctoBear", config)
 
-  val web = system.actorOf(Props[WebActor], name="web")
-  val service = system.actorOf(Props[ServiceActor], name="service")
-  val s3 = system.actorOf(Props[S3Actor], name="s3")
+  // Start first ActorSystem
 
-  // wait for actors to start
+  val frontendSystem = ActorSystem("frontend", config.getConfig("frontend").withFallback(config))
+
+  val web = frontendSystem.actorOf(Props[WebActor], name = "web")
+  val service = frontendSystem.actorOf(Props[ServiceActor], name = "service")
+
+  // Start second ActorSystem
+
+  val backendSystem = ActorSystem("backend", config.getConfig("backend").withFallback(config))
+
+  val s3 = backendSystem.actorOf(Props[S3Actor], name = "s3")
+
   Thread.sleep(2000)
 
   Try {
@@ -171,10 +178,12 @@ object PsychicOctoBear extends App {
       Thread.sleep(1000)
     }
 
-    system.awaitTermination(1.second)
+    backendSystem.awaitTermination(1.second)
+    frontendSystem.awaitTermination(1.second)
 
   }
 
-  system.shutdown()
-}
+  backendSystem.shutdown()
+  frontendSystem.shutdown()
 
+}
