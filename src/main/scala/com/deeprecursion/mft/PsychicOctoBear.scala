@@ -1,30 +1,24 @@
 package com.deeprecursion.mft
 
-
 import java.util.UUID
-import scala.concurrent.duration._
-import scala.concurrent.Future
+
+import akka.actor._
+import akka.pattern.{ask, pipe}
+import akka.util.Timeout
+import com.github.levkhomich.akka.tracing.{ActorTracing, TracingSupport}
+import com.typesafe.config._
+import net.liftweb.json._
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Random
 
-import akka.actor._, akka.actor.Actor._
-import com.typesafe.config._
-import akka.util.Timeout
-import akka.pattern.{ask, pipe}
 
-
-import net.liftweb.json._
-  import Extraction._
-import net.liftweb.json.Serialization.write
-import com.github.nscala_time.time.Imports._
-import com.github.levkhomich.akka.tracing.{ActorTracing, TracingSupport}
-
-
-final case class Put(id: String) extends TracingSupport { 
+final case class Put(id: String) extends TracingSupport {
   val name = productPrefix
 }
 
-final case class Ack(id: String, responseCode: Int) extends TracingSupport { 
+final case class Ack(id: String, responseCode: Int) extends TracingSupport {
   val name = productPrefix
 }
 
@@ -37,18 +31,19 @@ class ServiceActor extends Actor with ActorTracing {
   implicit val askTimeout: Timeout = 200.milliseconds
   implicit val formats = DefaultFormats
 
-  override def preStart() = {
+  override def preStart(): Unit = {
     println("Starting ServiceActor")
   }
 
   def receive = {
-    case msg @ Put(id)  => {
-      trace.sample(msg)
+
+    case msg @ Put(id) =>
+      trace.sample(msg, "psychic-octo-bear")
 
       val dstName = "S3"
       val dst = context.actorSelection("../" + dstName + "*")
       val label = msg.name + " " + id
-      trace.recordRPCName(msg, self.path.name, label)
+      trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
 
       println("\t\t" + self.path.name + " received Put: " + id)
@@ -62,15 +57,15 @@ class ServiceActor extends Actor with ActorTracing {
           Ack(id, 500)
       } map {
         case ack @ Ack(id, responseCode) =>
-          println("\t\t" + self.path.name + " received Ack with code: "+ 
-                  responseCode + " and id: " + id)
+          println("\t\t" + self.path.name + " received Ack with code: "+
+            responseCode + " and id: " + id)
           // close trace by marking response
           println("\t\t" + self.path.name + " acks: " + id)
           ack.asResponseTo(msg)
       } pipeTo sender
-    }
 
-    case _  => ()
+    case _  =>
+
   }
 }
 
@@ -78,18 +73,17 @@ class ServiceActor extends Actor with ActorTracing {
  * like AWS S3.
  */
 class S3Actor extends Actor with ActorTracing {
-  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val askTimeout: Timeout = 100.milliseconds
   implicit val formats = DefaultFormats
 
-  override def preStart() = {
+  override def preStart(): Unit = {
     println("Starting S3Actor")
   }
 
   def receive = {
-    case msg @ Put(id)  => {
+    case msg @ Put(id)  =>
       println("\t\t\t" + self.path.name + " received Put: " + id)
-      trace.sample(msg)
+      trace.sample(msg, "psychic-octo-bear")
 
 
       // introduce random timeouts
@@ -99,35 +93,35 @@ class S3Actor extends Actor with ActorTracing {
 
       val ack = Ack(id, 200)
       val label = ack.name + " " + ack.id
-      trace.recordRPCName(msg, self.path.name, label)
+      trace.recordKeyValue(msg, self.path.name, label)
       trace.record(ack, ack.id)
       println("\t\t\t" + self.path.name + " acks: " + id)
 
       sender ! ack.asResponseTo(msg)
-    }
-    case _  => ()
+
+    case _  =>
   }
 }
 
 /* An web app
- */ 
+ */
 class WebActor extends Actor with ActorTracing {
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val askTimeout: Timeout = 1000.milliseconds
   implicit val formats = DefaultFormats
 
-  override def preStart() = {
+  override def preStart(): Unit = {
     println("Starting WebActor")
   }
 
   def receive = {
-    case msg @ Put(id)  => {
-      trace.sample(msg)
+    case msg @ Put(id) =>
+      trace.sample(msg, "psychic-octo-bear")
 
       val dstName = "Service"
       val dst = context.actorSelection("../" + dstName + "*")
       val label = msg.name + " " + id
-      trace.recordRPCName(msg, self.path.name, label)
+      trace.recordKeyValue(msg, self.path.name, label)
       trace.record(msg, id)
 
       println("\t" + self.path.name + " received Put: " + id)
@@ -141,22 +135,21 @@ class WebActor extends Actor with ActorTracing {
           Ack(id, 500)
       } map {
         case ack @ Ack(id, responseCode) =>
-          println("\t" + self.path.name + " received Ack with code: "+ 
-                  responseCode + " and id: " + id)
+          println("\t" + self.path.name + " received Ack with code: "+
+            responseCode + " and id: " + id)
           // close trace by marking response
           println("\t" + self.path.name + " acks: " + id)
           ack.asResponseTo(msg)
       } pipeTo sender
-    }
 
-    case _  => ()
+    case _ =>
+
   }
 }
 
 
- 
+
 object PsychicOctoBear extends App {
-  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val askTimeout: Timeout = 1000.milliseconds
 
   val config = ConfigFactory.load("psychic-octo-bear.conf")
@@ -176,7 +169,7 @@ object PsychicOctoBear extends App {
     val future = web ? Put(uuid)
     val result = Await.result(future, askTimeout.duration).asInstanceOf[Ack]
     println("Ack with code: " + result.responseCode + " and id: " + result.id)
-    println
+    println()
     Thread.sleep(1000)
   }
 
