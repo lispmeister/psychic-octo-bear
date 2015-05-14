@@ -14,11 +14,11 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 
-final case class Put(id: String) extends TracingSupport {
+case class Put(id: String) extends TracingSupport {
   val name = productPrefix
 }
 
-final case class Ack(id: String, responseCode: Int) extends TracingSupport {
+case class Ack(id: String, responseCode: Int) extends TracingSupport {
   val name = productPrefix
 }
 
