@@ -82,7 +82,7 @@ class S3Actor extends Actor with ActorTracing {
   def receive = {
     case msg @ Put(id)  =>
       println("\t\t\t" + self.path.name + " received Put: " + id)
-      trace.sample(msg, "psychic-octo-bear")
+      trace.sample(msg, "S3Actor")
 
       // introduce random timeouts
       val t = Random.nextInt(400)
@@ -114,7 +114,7 @@ class WebActor extends Actor with ActorTracing {
 
   def receive = {
     case msg @ Put(id) =>
-      trace.sample(msg, "psychic-octo-bear")
+      trace.sample(msg, "WebActor")
 
       val servicePath = "akka.tcp://frontend@127.0.0.1:2553/user/service"
       val dst = context.actorSelection(servicePath)
