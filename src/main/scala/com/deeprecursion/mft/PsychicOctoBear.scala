@@ -26,7 +26,6 @@ final case class Ack(id: String, responseCode: Int) extends TracingSupport {
 /* The service backend
  */
 class ServiceActor extends Actor with ActorTracing {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   implicit val askTimeout: Timeout = 200.milliseconds
   implicit val formats = DefaultFormats
@@ -49,6 +48,7 @@ class ServiceActor extends Actor with ActorTracing {
       println("\t\t" + self.path.name + " received Put: " + id)
       println("\t\t" + self.path.name + " calls " + dstName + ": " + id)
       // use asChildOf to continue the span
+      import context.dispatcher
       dst ? Put(id).asChildOf(msg) recover {
         case e: Exception =>
           // trace exception
@@ -106,7 +106,7 @@ class S3Actor extends Actor with ActorTracing {
 /* An web app
  */
 class WebActor extends Actor with ActorTracing {
-  import scala.concurrent.ExecutionContext.Implicits.global
+
   implicit val askTimeout: Timeout = 1000.milliseconds
   implicit val formats = DefaultFormats
 
@@ -126,7 +126,7 @@ class WebActor extends Actor with ActorTracing {
 
       println("\t" + self.path.name + " received Put: " + id)
       println("\t" + self.path.name + " calls " + dstName + ": " + id)
-
+      import context.dispatcher
       dst ? Put(id).asChildOf(msg) recover {
         case e: Exception =>
           // trace exception
