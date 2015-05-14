@@ -22,7 +22,6 @@ final case class Ack(id: String, responseCode: Int) extends TracingSupport {
   val name = productPrefix
 }
 
-
 /* The service backend
  */
 class ServiceActor extends Actor with ActorTracing {
@@ -85,7 +84,6 @@ class S3Actor extends Actor with ActorTracing {
       println("\t\t\t" + self.path.name + " received Put: " + id)
       trace.sample(msg, "psychic-octo-bear")
 
-
       // introduce random timeouts
       val t = Random.nextInt(400)
       println("\t\t\tSleeping for " + t + " milliseconds....")
@@ -147,8 +145,6 @@ class WebActor extends Actor with ActorTracing {
   }
 }
 
-
-
 object PsychicOctoBear extends App {
   implicit val askTimeout: Timeout = 1000.milliseconds
 
@@ -173,6 +169,7 @@ object PsychicOctoBear extends App {
     Thread.sleep(1000)
   }
 
-  system.awaitTermination()
+  system.awaitTermination(30.seconds)
+  system.shutdown()
 }
 
